@@ -1,7 +1,7 @@
+use iced::widget::{button, column, container, text_input};
 use iced::window::Id;
-use iced::{Command, Element, Renderer, Theme};
-use iced::widget::{column, container, text_input, button};
-use iced::widget::shader::wgpu::naga::MathFunction::Length;
+use iced::keyboard::key;
+use iced::{Command, Element, Event, Renderer, Theme, keyboard, Subscription};
 use pam::Client;
 
 struct AuthCredentials {
@@ -17,7 +17,7 @@ use iced_sessionlock::MultiApplication;
 enum Message {
     NameEntered(String),
     PasswordEntered(String),
-    Unlock,
+    KeyboardEvent(Event),
 }
 impl MultiApplication for AuthCredentials {
     type Executor = iced::executor::Default;
@@ -50,21 +50,29 @@ impl MultiApplication for AuthCredentials {
                 Command::none()
             }
 
-            Message::Unlock => {
-                Command::single(UnLockAction.into())
-            }
-        }
+            Message::KeyboardEvent(event) => match event {
+                Event::Keyboard(keyboard::Event::KeyPressed {
+                    key: keyboard::Key::Named(key::Named::Enter),
+                    ..
+                }) => {
+                    Command::single(UnLockAction.into())
+                }
+                _ => Command::none(),
+            },
+        };
     }
 
+    fn subscription(&self) -> Subscription<Self::Message> {
+        iced::event::listen().map(Message::KeyboardEvent)
+    }
     fn view(&self, window: Id) -> Element<'_, Self::Message, Self::Theme, Renderer> {
-        column! [
+        column![
             text_input("Enter name", &self.name).on_input(Message::NameEntered),
             text_input("Enter password", &self.password).on_input(Message::PasswordEntered),
-            button("Unlock").on_press(Message::Unlock),
-        ].into()
+        ]
+        .into()
     }
 }
 fn main() -> Result<(), iced_sessionlock::Error> {
-
     AuthCredentials::run(Settings::default())
 }
