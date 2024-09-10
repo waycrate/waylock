@@ -1,7 +1,7 @@
-use iced::widget::{button, column, container, text_input};
-use iced::window::Id;
 use iced::keyboard::key;
-use iced::{Command, Element, Event, Renderer, Theme, keyboard, Subscription};
+use iced::widget::{column, text_input};
+use iced::window::Id;
+use iced::{keyboard, Command, Element, Event, Renderer, Subscription, Theme};
 use pam::Client;
 
 struct AuthCredentials {
@@ -55,7 +55,16 @@ impl MultiApplication for AuthCredentials {
                     key: keyboard::Key::Named(key::Named::Enter),
                     ..
                 }) => {
-                    Command::single(UnLockAction.into())
+                    let mut client =
+                        Client::with_password("system-auth").expect("Failed to init PAM client.");
+                    client
+                        .conversation_mut()
+                        .set_credentials(&self.name, &self.password);
+
+                    if client.authenticate().is_ok() {
+                        return Command::single(UnLockAction.into());
+                    }
+                    Command::none()
                 }
                 _ => Command::none(),
             },
@@ -65,7 +74,7 @@ impl MultiApplication for AuthCredentials {
     fn subscription(&self) -> Subscription<Self::Message> {
         iced::event::listen().map(Message::KeyboardEvent)
     }
-    fn view(&self, window: Id) -> Element<'_, Self::Message, Self::Theme, Renderer> {
+    fn view(&self, _window: Id) -> Element<'_, Self::Message, Self::Theme, Renderer> {
         column![
             text_input("Enter name", &self.name).on_input(Message::NameEntered),
             text_input("Enter password", &self.password).on_input(Message::PasswordEntered),
