@@ -52,9 +52,9 @@ impl MultiApplication for AuthCredentials {
 
             Message::KeyboardEvent(event) => match event {
                 Event::Keyboard(keyboard::Event::KeyPressed {
-                                    key: keyboard::Key::Named(key::Named::Enter),
-                                    ..
-                                }) => {
+                    key: keyboard::Key::Named(key::Named::Enter),
+                    ..
+                }) => {
                     let mut client =
                         Client::with_password("system-auth").expect("Failed to init PAM client.");
                     client
