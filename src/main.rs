@@ -40,7 +40,7 @@ impl MultiApplication for AuthCredentials {
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
-        return match message {
+        match message {
             Message::NameEntered(name) => {
                 self.name = name;
                 Command::none()
@@ -52,9 +52,9 @@ impl MultiApplication for AuthCredentials {
 
             Message::KeyboardEvent(event) => match event {
                 Event::Keyboard(keyboard::Event::KeyPressed {
-                    key: keyboard::Key::Named(key::Named::Enter),
-                    ..
-                }) => {
+                                    key: keyboard::Key::Named(key::Named::Enter),
+                                    ..
+                                }) => {
                     let mut client =
                         Client::with_password("system-auth").expect("Failed to init PAM client.");
                     client
@@ -68,7 +68,7 @@ impl MultiApplication for AuthCredentials {
                 }
                 _ => Command::none(),
             },
-        };
+        }
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
