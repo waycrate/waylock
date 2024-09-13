@@ -56,7 +56,7 @@ impl MultiApplication for Lock {
             }
 
             Message::StepMessage(step_msg) => {
-                self.steps.update(step_msg);
+                let _ = self.steps.update(step_msg);
                 Command::none()
             }
 
@@ -120,7 +120,7 @@ impl AuthSteps {
     }
 
     fn update(&mut self, msg: StepMessage) -> Command<StepMessage> {
-        self.steps[self.current].update(msg);
+        let _ = self.steps[self.current].update(msg);
         Command::none()
     }
 
