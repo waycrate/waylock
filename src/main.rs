@@ -1,7 +1,7 @@
 use iced::keyboard::key;
 use iced::widget::{button, column, row, text, text_input, Column};
 use iced::window::Id;
-use iced::{keyboard, window, Command, Element, Event, Renderer, Subscription, Theme};
+use iced::{keyboard, Command, Element, Event, Renderer, Subscription, Theme};
 use iced_sessionlock::actions::UnLockAction;
 use iced_sessionlock::settings::Settings;
 use iced_sessionlock::MultiApplication;
@@ -19,7 +19,6 @@ enum Message {
     BackPressed,
     NextPressed,
     StepMessage(StepMessage),
-    Unlock,
 }
 impl MultiApplication for Lock {
     type Executor = iced::executor::Default;
@@ -57,7 +56,6 @@ impl MultiApplication for Lock {
 
             Message::StepMessage(step_msg) => self.steps.update(step_msg),
 
-            Message::Unlock => Command::single(UnLockAction.into()),
         }
     }
 
@@ -67,7 +65,7 @@ impl MultiApplication for Lock {
         // TODO
         // Remove Next, Back and Unlock Button
 
-        let mut controls = row![]
+        let controls = row![]
             .push_maybe(
                 steps
                     .has_previous()
@@ -172,15 +170,13 @@ impl<'a> AuthStep {
                 Command::none()
             }
 
-            StepMessage::Unlock => {
-                Command::single(UnLockAction.into())
-            }
+            StepMessage::Unlock => Command::single(UnLockAction.into()),
 
             StepMessage::AuthError(auth_error) => {
                 if let AuthStep::Auth {
-                    auth_error: error,
-                    ..
-                } = self {
+                    auth_error: error, ..
+                } = self
+                {
                     *error = auth_error;
                 }
                 Command::none()
@@ -201,7 +197,7 @@ impl<'a> AuthStep {
                 if let AuthStep::Auth {
                     name,
                     password,
-                    auth_error,
+                    auth_error: _auth_error,
                 } = self
                 {
                     match event {
@@ -220,7 +216,9 @@ impl<'a> AuthStep {
                                 },
                                 |result| match result {
                                     Ok(_) => Message::StepMessage(StepMessage::Unlock),
-                                    Err(e) => Message::StepMessage(StepMessage::AuthError(format!("{}", e))),
+                                    Err(e) => Message::StepMessage(StepMessage::AuthError(
+                                        format!("{}", e),
+                                    )),
                                 },
                             );
                         }
