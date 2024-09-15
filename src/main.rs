@@ -260,6 +260,8 @@ impl<'a> AuthStep {
         // TODO
         // Improve styles
         column![
+            // TODO
+            // Add toggler icon for password
             text_input("Enter name", name).on_input(StepMessage::NameEntered),
             text_input("Enter password", password)
                 .on_input(StepMessage::PasswordEntered)
