@@ -1,7 +1,7 @@
 use iced::keyboard::key;
 use iced::widget::{button, column, row, text, text_input, Column};
 use iced::window::Id;
-use iced::{keyboard, Command, Element, Event, Renderer, Subscription, Theme};
+use iced::{keyboard, window, Command, Element, Event, Renderer, Subscription, Theme};
 use iced_sessionlock::actions::UnLockAction;
 use iced_sessionlock::settings::Settings;
 use iced_sessionlock::MultiApplication;
@@ -55,10 +55,7 @@ impl MultiApplication for Lock {
                 Command::none()
             }
 
-            Message::StepMessage(step_msg) => {
-                let _ = self.steps.update(step_msg);
-                Command::none()
-            }
+            Message::StepMessage(step_msg) => self.steps.update(step_msg),
 
             Message::Unlock => Command::single(UnLockAction.into()),
         }
@@ -81,10 +78,6 @@ impl MultiApplication for Lock {
                     .can_continue()
                     .then(|| button("Next").on_press(Message::NextPressed)),
             );
-
-        if self.steps.current == 1 {
-            controls = controls.push(button("unlock").on_press(Message::Unlock));
-        }
 
         column![steps.view().map(Message::StepMessage), controls,].into()
     }
@@ -119,9 +112,8 @@ impl AuthSteps {
         }
     }
 
-    fn update(&mut self, msg: StepMessage) -> Command<StepMessage> {
-        let _ = self.steps[self.current].update(msg);
-        Command::none()
+    fn update(&mut self, msg: StepMessage) -> Command<Message> {
+        self.steps[self.current].update(msg)
     }
 
     fn view(&self) -> Element<StepMessage> {
@@ -163,10 +155,12 @@ enum StepMessage {
     NameEntered(String),
     PasswordEntered(String),
     KeyboardEvent(Event),
+    Unlock,
+    AuthError(String),
 }
 
 impl<'a> AuthStep {
-    fn update(&mut self, msg: StepMessage) -> Command<StepMessage> {
+    fn update(&mut self, msg: StepMessage) -> Command<Message> {
         match msg {
             StepMessage::NameEntered(name) => {
                 if let AuthStep::Auth {
@@ -174,6 +168,20 @@ impl<'a> AuthStep {
                 } = self
                 {
                     *current_name = name;
+                }
+                Command::none()
+            }
+
+            StepMessage::Unlock => {
+                Command::single(UnLockAction.into())
+            }
+
+            StepMessage::AuthError(auth_error) => {
+                if let AuthStep::Auth {
+                    auth_error: error,
+                    ..
+                } = self {
+                    *error = auth_error;
                 }
                 Command::none()
             }
@@ -201,19 +209,20 @@ impl<'a> AuthStep {
                             key: keyboard::Key::Named(key::Named::Enter),
                             ..
                         }) => {
-                            let mut client = Client::with_password("system-auth")
-                                .expect("Failed to init PAM client.");
-                            client
-                                .conversation_mut()
-                                .set_credentials(&*name, &*password);
-
-                            if let Err(auth_error_msg) = client.authenticate() {
-                                *auth_error = format!("Authentication failed: {}", auth_error_msg);
-                                return Command::none();
-                            }
-                            // TODO
-                            // Fix Unlock Event
-                            Command::single(UnLockAction.into())
+                            let name = name.clone();
+                            let password = password.clone();
+                            return Command::perform(
+                                async move {
+                                    let mut client = Client::with_password("system-auth")
+                                        .expect("Failed to init PAM client.");
+                                    client.conversation_mut().set_credentials(&name, &password);
+                                    client.authenticate()
+                                },
+                                |result| match result {
+                                    Ok(_) => Message::StepMessage(StepMessage::Unlock),
+                                    Err(e) => Message::StepMessage(StepMessage::AuthError(format!("{}", e))),
+                                },
+                            );
                         }
                         _ => Command::none(),
                     }
