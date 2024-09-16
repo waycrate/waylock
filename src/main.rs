@@ -38,6 +38,10 @@ impl MultiApplication for Lock {
         String::from("Waylock")
     }
 
+    fn theme(&self) -> Self::Theme {
+        Theme::Dark
+    }
+
     fn subscription(&self) -> Subscription<Self::Message> {
         self.steps.subscription().map(Message::StepMessage)
     }
