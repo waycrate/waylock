@@ -1,7 +1,7 @@
 use iced::keyboard::key;
 use iced::widget::{button, column, row, text, text_input, Column};
 use iced::window::Id;
-use iced::{keyboard, Command, Element, Event, Renderer, Subscription, Theme};
+use iced::{keyboard, Alignment, Command, Element, Event, Length, Renderer, Subscription, Theme};
 use iced_sessionlock::actions::UnLockAction;
 use iced_sessionlock::settings::Settings;
 use iced_sessionlock::MultiApplication;
@@ -55,7 +55,6 @@ impl MultiApplication for Lock {
             }
 
             Message::StepMessage(step_msg) => self.steps.update(step_msg),
-
         }
     }
 
@@ -253,7 +252,12 @@ impl<'a> AuthStep {
     fn welcome() -> Column<'a, StepMessage> {
         // TODO
         // Fetch user name using `PAM`
-        column![text("fetch user details")].into()
+        column![text("fetch user details").size(30)]
+            .padding(450)
+            .align_items(Alignment::Center)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
     }
 
     fn auth(name: &'a str, password: &'a str, auth_error: &'a str) -> Column<'a, StepMessage> {
@@ -262,12 +266,22 @@ impl<'a> AuthStep {
         column![
             // TODO
             // Add toggler icon for password
-            text_input("Enter name", name).on_input(StepMessage::NameEntered),
+            text_input("Enter name", name)
+                .on_input(StepMessage::NameEntered)
+                .width(Length::Fixed(500f32))
+                .size(30),
             text_input("Enter password", password)
                 .on_input(StepMessage::PasswordEntered)
-                .secure(true),
+                .secure(true)
+                .width(Length::Fixed(500f32))
+                .size(30),
             text(auth_error),
         ]
+        .padding(450)
+        .spacing(10)
+        .align_items(Alignment::Center)
+        .width(Length::Fill)
+        .height(Length::Fill)
         .into()
     }
 }
