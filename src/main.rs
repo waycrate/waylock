@@ -1,5 +1,5 @@
 use iced::keyboard::key;
-use iced::widget::{button, column, row, text, text_input, Column};
+use iced::widget::{button, column, row, text, text_input, Column, image};
 use iced::window::Id;
 use iced::{keyboard, Alignment, Command, Element, Event, Length, Renderer, Subscription, Theme};
 use iced_sessionlock::actions::UnLockAction;
@@ -270,6 +270,7 @@ impl<'a> AuthStep {
         column![
             // TODO
             // Add toggler icon for password
+            image(format!("{}/assets/img.png", env!("CARGO_MANIFEST_DIR"))).width(250),
             text_input("Enter name", name)
                 .on_input(StepMessage::NameEntered)
                 .width(Length::Fixed(500f32))
@@ -281,7 +282,7 @@ impl<'a> AuthStep {
                 .size(30),
             text(auth_error),
         ]
-        .padding(450)
+        .padding(200)
         .spacing(10)
         .align_items(Alignment::Center)
         .width(Length::Fill)
