@@ -88,11 +88,6 @@ impl MultiApplication for Lock {
                 steps
                     .has_previous()
                     .then(|| button("Back").on_press(Message::BackPressed)),
-            )
-            .push_maybe(
-                steps
-                    .can_continue()
-                    .then(|| button("Next").on_press(Message::NextPressed)),
             );
 
         column![steps.view().map(Message::StepMessage), controls,].into()
