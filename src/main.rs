@@ -1,5 +1,5 @@
 use iced::keyboard::key;
-use iced::widget::{button, column, row, text, text_input, Column, image};
+use iced::widget::{button, column, image, row, text, text_input, Column};
 use iced::window::Id;
 use iced::{keyboard, Alignment, Command, Element, Event, Length, Renderer, Subscription, Theme};
 use iced_sessionlock::actions::UnLockAction;
@@ -19,6 +19,7 @@ enum Message {
     BackPressed,
     NextPressed,
     StepMessage(StepMessage),
+    EnterEvent(Event),
 }
 impl MultiApplication for Lock {
     type Executor = iced::executor::Default;
@@ -43,7 +44,10 @@ impl MultiApplication for Lock {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        self.steps.subscription().map(Message::StepMessage)
+        Subscription::batch(vec![
+            self.steps.subscription().map(Message::StepMessage),
+            iced::event::listen().map(Message::EnterEvent),
+        ])
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
@@ -57,6 +61,17 @@ impl MultiApplication for Lock {
                 self.steps.advance();
                 Command::none()
             }
+
+            Message::EnterEvent(event) => match event {
+                Event::Keyboard(keyboard::Event::KeyPressed {
+                    key: keyboard::Key::Named(key::Named::Enter),
+                    ..
+                }) => {
+                    let message = Message::NextPressed;
+                    Command::perform(async { message }, |msg| msg)
+                }
+                _ => Command::none(),
+            },
 
             Message::StepMessage(step_msg) => self.steps.update(step_msg),
         }
