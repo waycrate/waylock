@@ -1,7 +1,7 @@
 use iced::keyboard::key;
 use iced::widget::{button, column, image, row, text, text_input, Column};
 use iced::window::Id;
-use iced::{keyboard, Alignment, Command, Element, Event, Length, Renderer, Subscription, Theme};
+use iced::{keyboard, Alignment, Task as Command, Element, Event, Length, Renderer, Subscription, Theme};
 use iced_sessionlock::actions::UnLockAction;
 use iced_sessionlock::settings::Settings;
 use iced_sessionlock::MultiApplication;
@@ -14,12 +14,23 @@ struct Lock {
     steps: AuthSteps,
 }
 
+impl TryInto<UnLockAction> for Message {
+    type Error = Self;
+    fn try_into(self) -> Result<UnLockAction, Self::Error> {
+        if let Self::Unlock = self {
+            return Ok(UnLockAction);
+        }
+        Err(self)
+    }
+}
+
 #[derive(Debug, Clone)]
 enum Message {
     BackPressed,
     NextPressed,
     StepMessage(StepMessage),
     EnterEvent(Event),
+    Unlock,
 }
 impl MultiApplication for Lock {
     type Executor = iced::executor::Default;
@@ -73,6 +84,8 @@ impl MultiApplication for Lock {
                 _ => Command::none(),
             },
 
+            Message::Unlock => Command::done(message),
+
             Message::StepMessage(step_msg) => self.steps.update(step_msg),
         }
     }
@@ -88,7 +101,9 @@ impl MultiApplication for Lock {
                 steps
                     .has_previous()
                     .then(|| button("Back").on_press(Message::BackPressed)),
-            );
+            ).push(
+            button("close").on_press(Message::Unlock),
+        );
 
         column![steps.view().map(Message::StepMessage), controls,].into()
     }
@@ -166,7 +181,6 @@ enum StepMessage {
     NameEntered(String),
     PasswordEntered(String),
     KeyboardEvent(Event),
-    Unlock,
     AuthError(String),
 }
 
@@ -182,8 +196,6 @@ impl<'a> AuthStep {
                 }
                 Command::none()
             }
-
-            StepMessage::Unlock => Command::single(UnLockAction.into()),
 
             StepMessage::AuthError(auth_error) => {
                 if let AuthStep::Auth {
@@ -228,7 +240,7 @@ impl<'a> AuthStep {
                                     client.authenticate()
                                 },
                                 |result| match result {
-                                    Ok(_) => Message::StepMessage(StepMessage::Unlock),
+                                    Ok(_) => Message::Unlock,
                                     Err(e) => Message::StepMessage(StepMessage::AuthError(
                                         format!("{}", e),
                                     )),
@@ -268,7 +280,7 @@ impl<'a> AuthStep {
         // Fetch user name using `PAM`
         column![text("fetch user details").size(30)]
             .padding(450)
-            .align_items(Alignment::Center)
+            .align_x(Alignment::Center)
             .width(Length::Fill)
             .height(Length::Fill)
             .into()
@@ -294,7 +306,7 @@ impl<'a> AuthStep {
         ]
         .padding(200)
         .spacing(10)
-        .align_items(Alignment::Center)
+        .align_x(Alignment::Center)
         .width(Length::Fill)
         .height(Length::Fill)
         .into()
