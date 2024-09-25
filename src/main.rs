@@ -1,7 +1,9 @@
 use iced::keyboard::key;
 use iced::widget::{button, column, image, row, text, text_input, Column};
 use iced::window::Id;
-use iced::{keyboard, Alignment, Task as Command, Element, Event, Length, Renderer, Subscription, Theme};
+use iced::{
+    keyboard, Alignment, Element, Event, Length, Renderer, Subscription, Task as Command, Theme,
+};
 use iced_sessionlock::actions::UnLockAction;
 use iced_sessionlock::settings::Settings;
 use iced_sessionlock::MultiApplication;
@@ -101,9 +103,8 @@ impl MultiApplication for Lock {
                 steps
                     .has_previous()
                     .then(|| button("Back").on_press(Message::BackPressed)),
-            ).push(
-            button("close").on_press(Message::Unlock),
-        );
+            )
+            .push(button("close").on_press(Message::Unlock));
 
         column![steps.view().map(Message::StepMessage), controls,].into()
     }
@@ -117,7 +118,7 @@ struct AuthSteps {
 impl AuthSteps {
     fn subscription(&self) -> Subscription<StepMessage> {
         match &self.steps[self.current] {
-            AuthStep::Welcome { .. }=> Subscription::none(),
+            AuthStep::Welcome { .. } => Subscription::none(),
             AuthStep::Auth { .. } => iced::event::listen().map(StepMessage::KeyboardEvent),
         }
     }
@@ -125,13 +126,10 @@ impl AuthSteps {
 
 impl AuthSteps {
     fn new() -> AuthSteps {
-
         let user_name = user::get_user_name().unwrap();
         Self {
             steps: vec![
-                AuthStep::Welcome {
-                    user_name,
-                },
+                AuthStep::Welcome { user_name },
                 AuthStep::Auth {
                     name: String::new(),
                     password: String::new(),
@@ -264,14 +262,14 @@ impl<'a> AuthStep {
 
     fn can_continue(&self) -> bool {
         match self {
-            AuthStep::Welcome {..} => true,
+            AuthStep::Welcome { .. } => true,
             AuthStep::Auth { .. } => true,
         }
     }
 
     fn view(&self) -> Element<StepMessage> {
         match self {
-            AuthStep::Welcome { user_name}  => Self::welcome(user_name),
+            AuthStep::Welcome { user_name } => Self::welcome(user_name),
             AuthStep::Auth {
                 name,
                 password,
