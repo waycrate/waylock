@@ -1,3 +1,4 @@
+use std::ffi::{c_void, CStr};
 use iced::keyboard::key;
 use iced::widget::{button, column, image, row, text, text_input, Column};
 use iced::window::Id;
@@ -5,7 +6,7 @@ use iced::{keyboard, Alignment, Task as Command, Element, Event, Length, Rendere
 use iced_sessionlock::actions::UnLockAction;
 use iced_sessionlock::settings::Settings;
 use iced_sessionlock::MultiApplication;
-use pam::Client;
+use pam::{Client, PamHandle};
 fn main() -> Result<(), iced_sessionlock::Error> {
     Lock::run(Settings::default())
 }
@@ -117,7 +118,7 @@ struct AuthSteps {
 impl AuthSteps {
     fn subscription(&self) -> Subscription<StepMessage> {
         match &self.steps[self.current] {
-            AuthStep::Welcome => Subscription::none(),
+            AuthStep::Welcome { .. }=> Subscription::none(),
             AuthStep::Auth { .. } => iced::event::listen().map(StepMessage::KeyboardEvent),
         }
     }
@@ -125,9 +126,13 @@ impl AuthSteps {
 
 impl AuthSteps {
     fn new() -> AuthSteps {
+
+        let user_name = user::get_user_name().unwrap();
         Self {
             steps: vec![
-                AuthStep::Welcome,
+                AuthStep::Welcome {
+                    user_name,
+                },
                 AuthStep::Auth {
                     name: String::new(),
                     password: String::new(),
@@ -168,7 +173,9 @@ impl AuthSteps {
 }
 
 enum AuthStep {
-    Welcome,
+    Welcome {
+        user_name: String,
+    },
     Auth {
         name: String,
         password: String,
@@ -258,14 +265,14 @@ impl<'a> AuthStep {
 
     fn can_continue(&self) -> bool {
         match self {
-            AuthStep::Welcome => true,
+            AuthStep::Welcome {..} => true,
             AuthStep::Auth { .. } => true,
         }
     }
 
     fn view(&self) -> Element<StepMessage> {
         match self {
-            AuthStep::Welcome => Self::welcome(),
+            AuthStep::Welcome { user_name}  => Self::welcome(user_name),
             AuthStep::Auth {
                 name,
                 password,
@@ -275,10 +282,8 @@ impl<'a> AuthStep {
         .into()
     }
 
-    fn welcome() -> Column<'a, StepMessage> {
-        // TODO
-        // Fetch user name using `PAM`
-        column![text("fetch user details").size(30)]
+    fn welcome(user_name: &'a String) -> Column<'a, StepMessage> {
+        column![text(user_name).size(30)]
             .padding(450)
             .align_x(Alignment::Center)
             .width(Length::Fill)
