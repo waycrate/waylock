@@ -1,4 +1,3 @@
-use std::ffi::{c_void, CStr};
 use iced::keyboard::key;
 use iced::widget::{button, column, image, row, text, text_input, Column};
 use iced::window::Id;
@@ -6,7 +5,7 @@ use iced::{keyboard, Alignment, Task as Command, Element, Event, Length, Rendere
 use iced_sessionlock::actions::UnLockAction;
 use iced_sessionlock::settings::Settings;
 use iced_sessionlock::MultiApplication;
-use pam::{Client, PamHandle};
+use pam::Client;
 fn main() -> Result<(), iced_sessionlock::Error> {
     Lock::run(Settings::default())
 }
