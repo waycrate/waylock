@@ -8,6 +8,8 @@ use iced_sessionlock::actions::UnLockAction;
 use iced_sessionlock::settings::Settings;
 use iced_sessionlock::MultiApplication;
 use pam::Client;
+use uzers::{get_user_by_uid, get_current_uid};
+
 fn main() -> Result<(), iced_sessionlock::Error> {
     Lock::run(Settings::default())
 }
@@ -126,7 +128,8 @@ impl AuthSteps {
 
 impl AuthSteps {
     fn new() -> AuthSteps {
-        let user_name = user::get_user_name().unwrap();
+        let user = get_user_by_uid(get_current_uid()).unwrap();
+        let user_name = user.name().to_string_lossy().to_string();
         Self {
             steps: vec![
                 AuthStep::Welcome { user_name },
