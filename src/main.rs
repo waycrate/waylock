@@ -9,6 +9,8 @@ use iced_sessionlock::settings::Settings;
 use iced_sessionlock::MultiApplication;
 use pam::Client;
 use uzers::{get_user_by_uid, get_current_uid};
+use std::sync::LazyLock;
+static INPUT_ID: LazyLock<text_input::Id> = LazyLock::new(text_input::Id::unique);
 
 fn main() -> Result<(), iced_sessionlock::Error> {
     Lock::run(Settings::default())
@@ -74,7 +76,7 @@ impl MultiApplication for Lock {
 
             Message::NextPressed => {
                 self.steps.advance();
-                Command::none()
+                text_input::focus(INPUT_ID.clone())
             }
 
             Message::EnterEvent(event) => match event {
@@ -212,6 +214,7 @@ impl<'a> AuthStep {
                     *error = auth_error;
                 }
                 Command::none()
+
             }
 
             StepMessage::PasswordEntered(password) => {
@@ -301,6 +304,7 @@ impl<'a> AuthStep {
             text_input("Enter name", name)
                 .on_input(StepMessage::NameEntered)
                 .width(Length::Fixed(500f32))
+                .id(INPUT_ID.clone())
                 .size(30),
             text_input("Enter password", password)
                 .on_input(StepMessage::PasswordEntered)
