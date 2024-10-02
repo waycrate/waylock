@@ -1,5 +1,5 @@
 use iced::keyboard::key;
-use iced::widget::{button, column, image, row, text, text_input, Column};
+use iced::widget::{column, image, text, text_input, Column};
 use iced::window::Id;
 use iced::{
     keyboard, Alignment, Element, Event, Length, Renderer, Subscription, Task as Command, Theme,
@@ -32,7 +32,6 @@ impl TryInto<UnLockAction> for Message {
 
 #[derive(Debug, Clone)]
 enum Message {
-    BackPressed,
     NextPressed,
     StepMessage(StepMessage),
     EnterEvent(Event),
@@ -62,17 +61,12 @@ impl MultiApplication for Lock {
 
     fn subscription(&self) -> Subscription<Self::Message> {
         Subscription::batch(vec![
-            self.steps.subscription().map(Message::StepMessage),
             iced::event::listen().map(Message::EnterEvent),
         ])
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
-            Message::BackPressed => {
-                self.steps.go_back();
-                Command::none()
-            }
 
             Message::NextPressed => {
                 self.steps.advance();
@@ -102,15 +96,7 @@ impl MultiApplication for Lock {
         // TODO
         // Remove Next, Back and Unlock Button
 
-        let controls = row![]
-            .push_maybe(
-                steps
-                    .has_previous()
-                    .then(|| button("Back").on_press(Message::BackPressed)),
-            )
-            .push(button("close").on_press(Message::Unlock));
-
-        column![steps.view().map(Message::StepMessage), controls,].into()
+        column![steps.view().map(Message::StepMessage)].into()
     }
 }
 
@@ -119,14 +105,6 @@ struct AuthSteps {
     current: usize,
 }
 
-impl AuthSteps {
-    fn subscription(&self) -> Subscription<StepMessage> {
-        match &self.steps[self.current] {
-            AuthStep::Welcome { .. } => Subscription::none(),
-            AuthStep::Auth { .. } => iced::event::listen().map(StepMessage::KeyboardEvent),
-        }
-    }
-}
 
 impl AuthSteps {
     fn new() -> AuthSteps {
@@ -159,16 +137,6 @@ impl AuthSteps {
         }
     }
 
-    fn go_back(&mut self) {
-        if self.has_previous() {
-            self.current -= 1;
-        }
-    }
-
-    fn has_previous(&self) -> bool {
-        self.current > 0
-    }
-
     fn can_continue(&self) -> bool {
         self.current + 1 < self.steps.len() && self.steps[self.current].can_continue()
     }
@@ -188,7 +156,7 @@ enum AuthStep {
 #[derive(Clone, Debug)]
 enum StepMessage {
     PasswordEntered(String),
-    KeyboardEvent(Event),
+    Submit,
     AuthError(String),
 }
 
@@ -217,41 +185,33 @@ impl<'a> AuthStep {
                 Command::none()
             }
 
-            StepMessage::KeyboardEvent(event) => {
+            StepMessage::Submit => {
                 if let AuthStep::Auth {
                     name,
                     password,
                     auth_error: _auth_error,
                 } = self
                 {
-                    match event {
-                        Event::Keyboard(keyboard::Event::KeyPressed {
-                            key: keyboard::Key::Named(key::Named::Enter),
-                            ..
-                        }) => {
-                            let name = name.clone();
-                            let password = password.clone();
-                            return Command::perform(
-                                async move {
-                                    let mut client = Client::with_password("system-auth")
-                                        .expect("Failed to init PAM client.");
-                                    client.conversation_mut().set_credentials(&name, &password);
-                                    client.authenticate()
-                                },
-                                |result| match result {
-                                    Ok(_) => Message::Unlock,
-                                    Err(e) => Message::StepMessage(StepMessage::AuthError(
-                                        format!("{}", e),
-                                    )),
-                                },
-                            );
-                        }
-                        _ => Command::none(),
-                    }
-                } else {
-                    Command::none()
+                    let name = name.clone();
+                    let password = password.clone();
+                    return Command::perform(
+                        async move {
+                            let mut client = Client::with_password("system-auth")
+                                .expect("Failed to init PAM client.");
+                            client.conversation_mut().set_credentials(&name, &password);
+                            client.authenticate()
+                        },
+                        |result| match result {
+                            Ok(_) => Message::Unlock,
+                            Err(e) => Message::StepMessage(StepMessage::AuthError(
+                                format!("{}", e),
+                            )),
+                        },
+                    );
                 }
+                Command::none()
             }
+
         }
     }
 
@@ -294,6 +254,7 @@ impl<'a> AuthStep {
                 .on_input(StepMessage::PasswordEntered)
                 .secure(true)
                 .id(INPUT_ID.clone())
+                .on_submit(StepMessage::Submit)
                 .width(Length::Fixed(500f32))
                 .size(30),
             text(auth_error),
