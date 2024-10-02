@@ -131,12 +131,12 @@ impl AuthSteps {
 impl AuthSteps {
     fn new() -> AuthSteps {
         let user = get_user_by_uid(get_current_uid()).unwrap();
-        let user_name = user.name().to_string_lossy().to_string();
+        let user_name = user.name().to_string_lossy().to_string().clone();
         Self {
             steps: vec![
-                AuthStep::Welcome { user_name },
+                AuthStep::Welcome { user_name: user_name.clone() },
                 AuthStep::Auth {
-                    name: String::new(),
+                    name: user_name.clone(),
                     password: String::new(),
                     auth_error: String::new(),
                 },
@@ -187,7 +187,6 @@ enum AuthStep {
 
 #[derive(Clone, Debug)]
 enum StepMessage {
-    NameEntered(String),
     PasswordEntered(String),
     KeyboardEvent(Event),
     AuthError(String),
@@ -196,16 +195,6 @@ enum StepMessage {
 impl<'a> AuthStep {
     fn update(&mut self, msg: StepMessage) -> Command<Message> {
         match msg {
-            StepMessage::NameEntered(name) => {
-                if let AuthStep::Auth {
-                    name: current_name, ..
-                } = self
-                {
-                    *current_name = name;
-                }
-                Command::none()
-            }
-
             StepMessage::AuthError(auth_error) => {
                 if let AuthStep::Auth {
                     auth_error: error, ..
@@ -277,10 +266,10 @@ impl<'a> AuthStep {
         match self {
             AuthStep::Welcome { user_name } => Self::welcome(user_name),
             AuthStep::Auth {
-                name,
+                name: _,
                 password,
                 auth_error,
-            } => Self::auth(name, password, auth_error),
+            } => Self::auth(password, auth_error),
         }
         .into()
     }
@@ -294,18 +283,13 @@ impl<'a> AuthStep {
             .into()
     }
 
-    fn auth(name: &'a str, password: &'a str, auth_error: &'a str) -> Column<'a, StepMessage> {
+    fn auth(password: &'a str, auth_error: &'a str) -> Column<'a, StepMessage> {
         // TODO
         // Improve styles
         column![
             // TODO
             // Add toggler icon for password
             image(format!("{}/assets/img.png", env!("CARGO_MANIFEST_DIR"))).width(250),
-            text_input("Enter name", name)
-                .on_input(StepMessage::NameEntered)
-                .width(Length::Fixed(500f32))
-                .id(INPUT_ID.clone())
-                .size(30),
             text_input("Enter password", password)
                 .on_input(StepMessage::PasswordEntered)
                 .secure(true)
