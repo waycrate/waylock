@@ -293,6 +293,7 @@ impl<'a> AuthStep {
             text_input("Enter password", password)
                 .on_input(StepMessage::PasswordEntered)
                 .secure(true)
+                .id(INPUT_ID.clone())
                 .width(Length::Fixed(500f32))
                 .size(30),
             text(auth_error),
