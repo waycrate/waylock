@@ -236,7 +236,7 @@ impl<'a> AuthStep {
 
     fn welcome(user_name: &'a String) -> Column<'a, StepMessage> {
         column![text(user_name).size(30)]
-            .padding(450)
+            .padding(500)
             .align_x(Alignment::Center)
             .width(Length::Fill)
             .height(Length::Fill)
