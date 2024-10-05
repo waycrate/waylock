@@ -1,5 +1,5 @@
 use iced::keyboard::key;
-use iced::widget::{column, image, text, text_input, Column};
+use iced::widget::{column, image, text, text_input, Column, button};
 use iced::window::Id;
 use iced::{
     keyboard, Alignment, Element, Event, Length, Renderer, Subscription, Task as Command, Theme,
@@ -235,7 +235,7 @@ impl<'a> AuthStep {
     }
 
     fn welcome(user_name: &'a String) -> Column<'a, StepMessage> {
-        column![text(user_name).size(30)]
+        column![button(text(user_name).size(30))]
             .padding(500)
             .align_x(Alignment::Center)
             .width(Length::Fill)
