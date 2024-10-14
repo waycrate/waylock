@@ -1,15 +1,16 @@
 use iced::keyboard::key;
-use iced::widget::{column, image, text, text_input, Column, button};
+use iced::widget::{button, column, image, text, text_input, Column};
 use iced::window::Id;
 use iced::{
-    keyboard, Alignment, Element, Event, Length, Renderer, Subscription, Task as Command, Theme,
+    keyboard, Alignment, Color, Element, Event, Length, Renderer, Subscription, Task as Command,
+    Theme,
 };
 use iced_sessionlock::actions::UnLockAction;
 use iced_sessionlock::settings::Settings;
 use iced_sessionlock::MultiApplication;
 use pam::Client;
-use uzers::{get_user_by_uid, get_current_uid};
 use std::sync::LazyLock;
+use uzers::{get_current_uid, get_user_by_uid};
 static INPUT_ID: LazyLock<text_input::Id> = LazyLock::new(text_input::Id::unique);
 
 fn main() -> Result<(), iced_sessionlock::Error> {
@@ -60,14 +61,11 @@ impl MultiApplication for Lock {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        Subscription::batch(vec![
-            iced::event::listen().map(Message::EnterEvent),
-        ])
+        Subscription::batch(vec![iced::event::listen().map(Message::EnterEvent)])
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
-
             Message::NextPressed => {
                 self.steps.advance();
                 text_input::focus(INPUT_ID.clone())
@@ -105,14 +103,15 @@ struct AuthSteps {
     current: usize,
 }
 
-
 impl AuthSteps {
     fn new() -> AuthSteps {
         let user = get_user_by_uid(get_current_uid()).unwrap();
         let user_name = user.name().to_string_lossy().to_string().clone();
         Self {
             steps: vec![
-                AuthStep::Welcome { user_name: user_name.clone() },
+                AuthStep::Welcome {
+                    user_name: user_name.clone(),
+                },
                 AuthStep::Auth {
                     name: user_name.clone(),
                     password: String::new(),
@@ -171,7 +170,6 @@ impl<'a> AuthStep {
                     *error = auth_error;
                 }
                 Command::none()
-
             }
 
             StepMessage::PasswordEntered(password) => {
@@ -203,15 +201,14 @@ impl<'a> AuthStep {
                         },
                         |result| match result {
                             Ok(_) => Message::Unlock,
-                            Err(e) => Message::StepMessage(StepMessage::AuthError(
-                                format!("{}", e),
-                            )),
+                            Err(e) => {
+                                Message::StepMessage(StepMessage::AuthError(format!("{}", e)))
+                            }
                         },
                     );
                 }
                 Command::none()
             }
-
         }
     }
 
@@ -235,12 +232,29 @@ impl<'a> AuthStep {
     }
 
     fn welcome(user_name: &'a String) -> Column<'a, StepMessage> {
-        column![button(text(user_name).size(30))]
-            .padding(500)
-            .align_x(Alignment::Center)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .into()
+        column![
+            button(text(user_name).size(30)).style(move |_theme, _status| {
+                button::Style {
+                    background: Some(iced::Background::Color(Color::from_rgb(0.18, 0.18, 0.18))),
+                    text_color: Color::from_rgb(0.85, 0.85, 0.85),
+                    border: iced::Border {
+                        color: Color::from_rgb(0.3, 0.3, 0.3),
+                        width: 1.0,
+                        radius: 6.0.into(),
+                    },
+                    shadow: iced::Shadow {
+                        color: Color::from_rgba(0.0, 0.0, 0.0, 0.2),
+                        offset: iced::Vector { x: 0.0, y: 2.0 },
+                        blur_radius: 4.0,
+                    },
+                }
+            })
+        ]
+        .padding(500)
+        .align_x(Alignment::Center)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .into()
     }
 
     fn auth(password: &'a str, auth_error: &'a str) -> Column<'a, StepMessage> {
