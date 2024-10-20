@@ -1,5 +1,5 @@
 use iced::keyboard::key;
-use iced::widget::{button, column, image, text, text_input, Column};
+use iced::widget::{button, column, image, text, text_input, Column, container, Image, Container, Stack};
 use iced::window::Id;
 use iced::{
     keyboard, Alignment, Color, Element, Event, Length, Renderer, Subscription, Task as Command,
@@ -90,9 +90,6 @@ impl MultiApplication for Lock {
 
     fn view(&self, _window: Id) -> Element<'_, Self::Message, Self::Theme, Renderer> {
         let Lock { steps, .. } = self;
-
-        // TODO
-        // Remove Next, Back and Unlock Button
 
         column![steps.view().map(Message::StepMessage)].into()
     }
@@ -226,14 +223,16 @@ impl<'a> AuthStep {
                 name: _,
                 password,
                 auth_error,
-            } => Self::auth(password, auth_error),
+            } => Self::auth(password, auth_error).into(),
         }
         .into()
     }
 
-    fn welcome(user_name: &'a String) -> Column<'a, StepMessage> {
-        column![
-            button(text(user_name).size(30)).style(move |_theme, _status| {
+    fn welcome(user_name: &'a String) -> Element<'a, StepMessage> {
+        let image = Image::new("assets/ferris.png").width(Length::Fill).height(Length::Fill).opacity(10.0);
+
+        let col = column![
+            button(text(user_name).size(35)).width(Length::Fixed(500f32)).style(move |_theme, _status| {
                 button::Style {
                     background: Some(iced::Background::Color(Color::from_rgb(0.18, 0.18, 0.18))),
                     text_color: Color::from_rgb(0.85, 0.85, 0.85),
@@ -253,17 +252,20 @@ impl<'a> AuthStep {
         .padding(500)
         .align_x(Alignment::Center)
         .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+        .height(Length::Fill);
+
+        let mut st = Stack::new();
+        st = st.push(image);
+        st = st.push(col);
+        container(st).into()
     }
 
-    fn auth(password: &'a str, auth_error: &'a str) -> Column<'a, StepMessage> {
+    fn auth(password: &'a str, auth_error: &'a str) -> Element<'a, StepMessage> {
         // TODO
         // Improve styles
-        column![
+        let col = column![
             // TODO
             // Add toggler icon for password
-            image(format!("{}/assets/img.png", env!("CARGO_MANIFEST_DIR"))).width(250),
             text_input("Enter password", password)
                 .on_input(StepMessage::PasswordEntered)
                 .secure(true)
@@ -273,11 +275,21 @@ impl<'a> AuthStep {
                 .size(30),
             text(auth_error),
         ]
-        .padding(200)
         .spacing(10)
         .align_x(Alignment::Center)
         .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+        .height(Length::Fill);
+
+        // Fix padding
+
+        let ct = container(col).align_x(Alignment::Center).align_y(Alignment::End);
+
+        let image = Image::new("assets/ferris2.png").width(Length::Fill).height(Length::Fill);
+
+        let mut st = Stack::new();
+        st = st.push(image);
+        st = st.push(ct);
+
+        container(st).into()
     }
 }
