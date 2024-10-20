@@ -5,6 +5,6 @@ edition = "2021"
 
 [dependencies]
 pam = { version = "0.8.0", default-features = false, features = ["client"]}
-iced = { version = "0.13", default-features = false, features = ["image"]}
+iced = { version = "0.13", default-features = false, features = ["advanced", "image"]}
 iced_sessionlock = { version = "0.7", default-features = false }
 uzers = "0.12.1"
