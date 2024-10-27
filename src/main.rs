@@ -274,9 +274,14 @@ impl<'a> AuthStep {
     fn auth(password: &'a str, auth_error: &'a str) -> Element<'a, StepMessage> {
         // TODO
         // Improve styles
+        let now = Local::now();
+        let day = now.format("%A, %B %e").to_string();
+        let time = now.format("%H:%M").to_string();
         let col = column![
             // TODO
             // Add toggler icon for password
+            text(time).size(75),
+            text(day).size(35),
             text_input("Enter password", password)
                 .on_input(StepMessage::PasswordEntered)
                 .secure(true)
@@ -286,7 +291,7 @@ impl<'a> AuthStep {
                 .size(30),
             text(auth_error),
         ]
-        .padding(500)
+        .padding(375)
         .spacing(10)
         .align_x(Alignment::Center)
         .width(Length::Fill)
