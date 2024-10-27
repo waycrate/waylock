@@ -257,7 +257,9 @@ impl<'a> AuthStep {
                             blur_radius: 4.0,
                         },
                     }
-                })
+                }),
+                iced::widget::Space::with_height(15),
+                text("Press Enter to unlock")
         ]
         .spacing(10)
         .padding(375)
