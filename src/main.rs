@@ -1,5 +1,6 @@
+use chrono::Local;
 use iced::keyboard::key;
-use iced::widget::{button, column, text, text_input, container, Image, Stack};
+use iced::widget::{button, column, container, text, text_input, Image, Stack};
 use iced::window::Id;
 use iced::{
     keyboard, Alignment, Color, Element, Event, Length, Renderer, Subscription, Task as Command,
@@ -198,9 +199,7 @@ impl<'a> AuthStep {
                         },
                         |result| match result {
                             Ok(_) => Message::Unlock,
-                            Err(e) => {
-                                Message::Step(StepMessage::AuthError(format!("{}", e)))
-                            }
+                            Err(e) => Message::Step(StepMessage::AuthError(format!("{}", e))),
                         },
                     );
                 }
@@ -228,27 +227,40 @@ impl<'a> AuthStep {
     }
 
     fn welcome(user_name: &'a String) -> Element<'a, StepMessage> {
-        let image = Image::new("assets/ferris.png").width(Length::Fill).height(Length::Fill).opacity(10.0);
+        let image = Image::new("assets/ferris.png")
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .opacity(10.0);
 
+        let now = Local::now();
+        let day = now.format("%A, %B %e").to_string();
+        let time = now.format("%H:%M").to_string();
         let col = column![
-            button(text(user_name).size(35)).width(Length::Fixed(500f32)).style(move |_theme, _status| {
-                button::Style {
-                    background: Some(iced::Background::Color(Color::from_rgb(0.18, 0.18, 0.18))),
-                    text_color: Color::from_rgb(0.85, 0.85, 0.85),
-                    border: iced::Border {
-                        color: Color::from_rgb(0.3, 0.3, 0.3),
-                        width: 1.0,
-                        radius: 6.0.into(),
-                    },
-                    shadow: iced::Shadow {
-                        color: Color::from_rgba(0.0, 0.0, 0.0, 0.2),
-                        offset: iced::Vector { x: 0.0, y: 2.0 },
-                        blur_radius: 4.0,
-                    },
-                }
-            })
+            text(time).size(75),
+            text(day).size(35),
+            button(text(user_name).size(35))
+                .width(Length::Fixed(400f32))
+                .style(move |_theme, _status| {
+                    button::Style {
+                        background: Some(iced::Background::Color(Color::from_rgb(
+                            0.18, 0.18, 0.18,
+                        ))),
+                        text_color: Color::from_rgb(0.85, 0.85, 0.85),
+                        border: iced::Border {
+                            color: Color::from_rgb(0.3, 0.3, 0.3),
+                            width: 1.0,
+                            radius: 6.0.into(),
+                        },
+                        shadow: iced::Shadow {
+                            color: Color::from_rgba(0.0, 0.0, 0.0, 0.2),
+                            offset: iced::Vector { x: 0.0, y: 2.0 },
+                            blur_radius: 4.0,
+                        },
+                    }
+                })
         ]
-        .padding(500)
+        .spacing(10)
+        .padding(375)
         .align_x(Alignment::Center)
         .width(Length::Fill)
         .height(Length::Fill);
@@ -274,20 +286,19 @@ impl<'a> AuthStep {
                 .size(30),
             text(auth_error),
         ]
+        .padding(500)
         .spacing(10)
         .align_x(Alignment::Center)
         .width(Length::Fill)
         .height(Length::Fill);
 
-        // Fix padding
+        let image = Image::new("assets/ferris2.png")
+            .width(Length::Fill)
+            .height(Length::Fill);
 
-        let ct = container(col).align_x(Alignment::Center).align_y(Alignment::End);
-
-        let image = Image::new("assets/ferris2.png").width(Length::Fill).height(Length::Fill);
-
-        let mut st = Stack::new();
+        let mut st = Stack::new().width(Length::Fill).height(Length::Fill);
         st = st.push(image);
-        st = st.push(ct);
+        st = st.push(col);
 
         container(st).into()
     }
