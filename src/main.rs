@@ -1,5 +1,5 @@
 use iced::keyboard::key;
-use iced::widget::{button, column, image, text, text_input, Column, container, Image, Container, Stack};
+use iced::widget::{button, column, text, text_input, container, Image, Stack};
 use iced::window::Id;
 use iced::{
     keyboard, Alignment, Color, Element, Event, Length, Renderer, Subscription, Task as Command,
@@ -34,7 +34,7 @@ impl TryInto<UnLockAction> for Message {
 #[derive(Debug, Clone)]
 enum Message {
     NextPressed,
-    StepMessage(StepMessage),
+    Step(StepMessage),
     EnterEvent(Event),
     Unlock,
 }
@@ -84,14 +84,14 @@ impl MultiApplication for Lock {
 
             Message::Unlock => Command::done(message),
 
-            Message::StepMessage(step_msg) => self.steps.update(step_msg),
+            Message::Step(step_msg) => self.steps.update(step_msg),
         }
     }
 
     fn view(&self, _window: Id) -> Element<'_, Self::Message, Self::Theme, Renderer> {
         let Lock { steps, .. } = self;
 
-        column![steps.view().map(Message::StepMessage)].into()
+        column![steps.view().map(Message::Step)].into()
     }
 }
 
@@ -199,7 +199,7 @@ impl<'a> AuthStep {
                         |result| match result {
                             Ok(_) => Message::Unlock,
                             Err(e) => {
-                                Message::StepMessage(StepMessage::AuthError(format!("{}", e)))
+                                Message::Step(StepMessage::AuthError(format!("{}", e)))
                             }
                         },
                     );
@@ -223,9 +223,8 @@ impl<'a> AuthStep {
                 name: _,
                 password,
                 auth_error,
-            } => Self::auth(password, auth_error).into(),
+            } => Self::auth(password, auth_error),
         }
-        .into()
     }
 
     fn welcome(user_name: &'a String) -> Element<'a, StepMessage> {
