@@ -3,8 +3,8 @@ use iced::keyboard::key;
 use iced::widget::{column, container, image, text, text_input, Image, Stack};
 use iced::window::Id;
 use iced::{
-    keyboard, Alignment, Background, Color, Element, Event, Length, Subscription,
-    Task as Command, Theme,
+    keyboard, Alignment, Background, Color, Element, Event, Length, Subscription, Task as Command,
+    Theme,
 };
 use pam::Client;
 use std::sync::LazyLock;
@@ -249,6 +249,7 @@ impl<'a> AuthStep {
         let image = Image::new(IMAGE_B_HANDLE.clone())
             .width(Length::Fill)
             .height(Length::Fill)
+            .content_fit(iced::ContentFit::Cover)
             .opacity(10.0);
 
         let now = Local::now();
@@ -281,10 +282,15 @@ impl<'a> AuthStep {
         .width(Length::Fill)
         .height(Length::Fill);
 
-        let mut st = Stack::new();
-        st = st.push(image);
-        st = st.push(col);
-        container(st).into()
+        let st = Stack::new()
+            .push(image)
+            .push(col)
+            .width(Length::Fill)
+            .height(Length::Fill);
+        container(st)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
     }
 
     fn auth(
@@ -321,7 +327,6 @@ impl<'a> AuthStep {
                 .on_submit(StepMessage::Submit)
                 .width(Length::Fixed(320f32))
                 .size(30),
-
             text(auth_error),
         ]
         .padding(350)
@@ -332,12 +337,18 @@ impl<'a> AuthStep {
 
         let image = Image::new(IMAGE_A_HANDLE.clone())
             .width(Length::Fill)
-            .height(Length::Fill);
+            .height(Length::Fill)
+            .content_fit(iced::ContentFit::Cover);
 
-        let mut st = Stack::new().width(Length::Fill).height(Length::Fill);
-        st = st.push(image);
-        st = st.push(col);
+        let st = Stack::new()
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .push(image)
+            .push(col);
 
-        container(st).into()
+        container(st)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
     }
 }
