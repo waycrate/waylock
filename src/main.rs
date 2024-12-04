@@ -2,7 +2,10 @@ use chrono::Local;
 use iced::keyboard::key;
 use iced::widget::{column, container, image, text, text_input, Image, Stack};
 use iced::window::Id;
-use iced::{keyboard, Alignment, Element, Event, Length, Subscription, Task as Command, Theme};
+use iced::{
+    keyboard, Alignment, Background, Color, Element, Event, Length, Subscription,
+    Task as Command, Theme,
+};
 use pam::Client;
 use std::sync::LazyLock;
 use uzers::{get_current_uid, get_user_by_uid};
@@ -11,8 +14,8 @@ use iced_sessionlock::to_session_message;
 
 use iced_sessionlock::build_pattern::application;
 
-const IMAGE_A: &[u8] = include_bytes!("../assets/ferris.png");
-const IMAGE_B: &[u8] = include_bytes!("../assets/ferris2.png");
+const IMAGE_A: &[u8] = include_bytes!("../assets/wallpaper2.jpeg");
+const IMAGE_B: &[u8] = include_bytes!("../assets/wallpaper1.jpeg");
 const ACCOUNT: &[u8] = include_bytes!("../assets/account.png");
 
 static INPUT_ID: LazyLock<text_input::Id> = LazyLock::new(text_input::Id::unique);
@@ -234,11 +237,11 @@ impl<'a> AuthStep {
                 icon_handle,
             } => Self::welcome(user_name, icon_handle.clone()),
             AuthStep::Auth {
-                name: _,
+                name,
                 password,
                 auth_error,
                 icon_handle,
-            } => Self::auth(password, auth_error, icon_handle.clone()),
+            } => Self::auth(name, password, auth_error, icon_handle.clone()),
         }
     }
 
@@ -252,18 +255,28 @@ impl<'a> AuthStep {
         let day = now.format("%A, %B %e").to_string();
         let time = now.format("%H:%M").to_string();
         let col = column![
-            text(time).size(75),
-            text(day).size(35),
+            text(time)
+                .font(iced::Font {
+                    weight: iced::font::Weight::Bold,
+                    ..Default::default()
+                })
+                .size(75),
+            text(day)
+                .font(iced::Font {
+                    weight: iced::font::Weight::Bold,
+                    ..Default::default()
+                })
+                .size(35),
             iced::widget::Space::with_height(70),
             Image::new(user_icon)
                 .width(Length::Fixed(120.))
                 .height(Length::Fixed(120.)),
             text(format!("Welcome {}", user_name)).size(35),
             iced::widget::Space::with_height(30),
-            text("Press Enter to unlock")
+            text("Press Enter to unlock").size(22)
         ]
-        .padding(100)
-        .spacing(10)
+        .padding(220)
+        .spacing(5)
         .align_x(Alignment::Center)
         .width(Length::Fill)
         .height(Length::Fill);
@@ -275,34 +288,44 @@ impl<'a> AuthStep {
     }
 
     fn auth(
+        name: &'a str,
         password: &'a str,
         auth_error: &'a str,
         user_icon: image::Handle,
     ) -> Element<'a, StepMessage> {
-        // TODO
-        // Improve styles
-        let now = Local::now();
-        let day = now.format("%A, %B %e").to_string();
-        let time = now.format("%H:%M").to_string();
         let col = column![
-            // TODO
-            // Add toggler icon for password
-            text(time).size(75),
-            text(day).size(35),
             Image::new(user_icon)
                 .width(Length::Fixed(120.))
                 .height(Length::Fixed(120.)),
+            text(name).size(45).font(iced::Font {
+                weight: iced::font::Weight::Bold,
+                ..Default::default()
+            }),
             text_input("Enter password", password)
+                .padding(10)
+                .style(move |_theme, _status| text_input::Style {
+                    background: Background::Color(Color::from_rgb8(60, 60, 60)),
+                    border: iced::Border {
+                        color: Color::TRANSPARENT,
+                        width: 2.0,
+                        radius: 10.0.into()
+                    },
+                    icon: Color::TRANSPARENT,
+                    placeholder: Color::WHITE,
+                    value: Color::WHITE,
+                    selection: Color::from_rgb8(0, 150, 255)
+                })
                 .on_input(StepMessage::PasswordEntered)
                 .secure(true)
                 .id(INPUT_ID.clone())
                 .on_submit(StepMessage::Submit)
-                .width(Length::Fixed(500f32))
+                .width(Length::Fixed(320f32))
                 .size(30),
+
             text(auth_error),
         ]
-        .padding(375)
-        .spacing(10)
+        .padding(350)
+        .spacing(40)
         .align_x(Alignment::Center)
         .width(Length::Fill)
         .height(Length::Fill);
