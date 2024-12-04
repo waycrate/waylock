@@ -1,10 +1,8 @@
 use chrono::Local;
 use iced::keyboard::key;
-use iced::widget::{button, column, container, text, text_input, Image, Stack};
+use iced::widget::{column, container, image, text, text_input, Image, Stack};
 use iced::window::Id;
-use iced::{
-    keyboard, Alignment, Color, Element, Event, Length, Subscription, Task as Command, Theme,
-};
+use iced::{keyboard, Alignment, Element, Event, Length, Subscription, Task as Command, Theme};
 use pam::Client;
 use std::sync::LazyLock;
 use uzers::{get_current_uid, get_user_by_uid};
@@ -12,8 +10,19 @@ use uzers::{get_current_uid, get_user_by_uid};
 use iced_sessionlock::to_session_message;
 
 use iced_sessionlock::build_pattern::application;
+
+const IMAGE_A: &[u8] = include_bytes!("../assets/ferris.png");
+const IMAGE_B: &[u8] = include_bytes!("../assets/ferris2.png");
+const ACCOUNT: &[u8] = include_bytes!("../assets/account.png");
+
 static INPUT_ID: LazyLock<text_input::Id> = LazyLock::new(text_input::Id::unique);
 
+static IMAGE_A_HANDLE: LazyLock<image::Handle> =
+    LazyLock::new(|| image::Handle::from_bytes(IMAGE_A));
+static IMAGE_B_HANDLE: LazyLock<image::Handle> =
+    LazyLock::new(|| image::Handle::from_bytes(IMAGE_B));
+static ACCOUNT_DEFAULT_HANDLE: LazyLock<image::Handle> =
+    LazyLock::new(|| image::Handle::from_bytes(ACCOUNT));
 fn main() -> Result<(), iced_sessionlock::Error> {
     application(Lock::update, Lock::view)
         .theme(Lock::theme)
@@ -84,6 +93,7 @@ impl Lock {
 
 struct AuthSteps {
     steps: Vec<AuthStep>,
+
     current: usize,
 }
 
@@ -91,12 +101,25 @@ impl AuthSteps {
     fn new() -> AuthSteps {
         let user = get_user_by_uid(get_current_uid()).unwrap();
         let user_name = user.name().to_string_lossy().to_string().clone();
+        let icon_path = format!("/var/lib/AccountsService/icons/{user_name}");
+        let icon_path = std::path::Path::new(&icon_path);
+        let icon_handle = if icon_path.exists() {
+            if let Ok(data) = std::fs::read(icon_path) {
+                image::Handle::from_bytes(data)
+            } else {
+                ACCOUNT_DEFAULT_HANDLE.clone()
+            }
+        } else {
+            ACCOUNT_DEFAULT_HANDLE.clone()
+        };
         Self {
             steps: vec![
                 AuthStep::Welcome {
+                    icon_handle: icon_handle.clone(),
                     user_name: user_name.clone(),
                 },
                 AuthStep::Auth {
+                    icon_handle,
                     name: user_name.clone(),
                     password: String::new(),
                     auth_error: String::new(),
@@ -127,9 +150,11 @@ impl AuthSteps {
 
 enum AuthStep {
     Welcome {
+        icon_handle: image::Handle,
         user_name: String,
     },
     Auth {
+        icon_handle: image::Handle,
         name: String,
         password: String,
         auth_error: String,
@@ -172,6 +197,7 @@ impl<'a> AuthStep {
                     name,
                     password,
                     auth_error: _auth_error,
+                    ..
                 } = self
                 {
                     let name = name.clone();
@@ -203,17 +229,21 @@ impl<'a> AuthStep {
 
     fn view(&self) -> Element<StepMessage> {
         match self {
-            AuthStep::Welcome { user_name } => Self::welcome(user_name),
+            AuthStep::Welcome {
+                user_name,
+                icon_handle,
+            } => Self::welcome(user_name, icon_handle.clone()),
             AuthStep::Auth {
                 name: _,
                 password,
                 auth_error,
-            } => Self::auth(password, auth_error),
+                icon_handle,
+            } => Self::auth(password, auth_error, icon_handle.clone()),
         }
     }
 
-    fn welcome(user_name: &str) -> Element<StepMessage> {
-        let image = Image::new("assets/ferris.png")
+    fn welcome(user_name: &str, user_icon: image::Handle) -> Element<StepMessage> {
+        let image = Image::new(IMAGE_B_HANDLE.clone())
             .width(Length::Fill)
             .height(Length::Fill)
             .opacity(10.0);
@@ -224,31 +254,16 @@ impl<'a> AuthStep {
         let col = column![
             text(time).size(75),
             text(day).size(35),
-            button(text(user_name).size(35))
-                .width(Length::Fixed(400f32))
-                .style(move |_theme, _status| {
-                    button::Style {
-                        background: Some(iced::Background::Color(Color::from_rgb(
-                            0.18, 0.18, 0.18,
-                        ))),
-                        text_color: Color::from_rgb(0.85, 0.85, 0.85),
-                        border: iced::Border {
-                            color: Color::from_rgb(0.3, 0.3, 0.3),
-                            width: 1.0,
-                            radius: 6.0.into(),
-                        },
-                        shadow: iced::Shadow {
-                            color: Color::from_rgba(0.0, 0.0, 0.0, 0.2),
-                            offset: iced::Vector { x: 0.0, y: 2.0 },
-                            blur_radius: 4.0,
-                        },
-                    }
-                }),
-            iced::widget::Space::with_height(15),
+            iced::widget::Space::with_height(70),
+            Image::new(user_icon)
+                .width(Length::Fixed(120.))
+                .height(Length::Fixed(120.)),
+            text(format!("Welcome {}", user_name)).size(35),
+            iced::widget::Space::with_height(30),
             text("Press Enter to unlock")
         ]
+        .padding(100)
         .spacing(10)
-        .padding(375)
         .align_x(Alignment::Center)
         .width(Length::Fill)
         .height(Length::Fill);
@@ -259,7 +274,11 @@ impl<'a> AuthStep {
         container(st).into()
     }
 
-    fn auth(password: &'a str, auth_error: &'a str) -> Element<'a, StepMessage> {
+    fn auth(
+        password: &'a str,
+        auth_error: &'a str,
+        user_icon: image::Handle,
+    ) -> Element<'a, StepMessage> {
         // TODO
         // Improve styles
         let now = Local::now();
@@ -270,6 +289,9 @@ impl<'a> AuthStep {
             // Add toggler icon for password
             text(time).size(75),
             text(day).size(35),
+            Image::new(user_icon)
+                .width(Length::Fixed(120.))
+                .height(Length::Fixed(120.)),
             text_input("Enter password", password)
                 .on_input(StepMessage::PasswordEntered)
                 .secure(true)
@@ -285,7 +307,7 @@ impl<'a> AuthStep {
         .width(Length::Fill)
         .height(Length::Fill);
 
-        let image = Image::new("assets/ferris2.png")
+        let image = Image::new(IMAGE_A_HANDLE.clone())
             .width(Length::Fill)
             .height(Length::Fill);
 
