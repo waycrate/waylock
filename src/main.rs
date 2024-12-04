@@ -3,49 +3,38 @@ use iced::keyboard::key;
 use iced::widget::{button, column, container, text, text_input, Image, Stack};
 use iced::window::Id;
 use iced::{
-    keyboard, Alignment, Color, Element, Event, Length, Renderer, Subscription, Task as Command,
-    Theme,
+    keyboard, Alignment, Color, Element, Event, Length, Subscription, Task as Command, Theme,
 };
-use iced_sessionlock::actions::UnLockAction;
-use iced_sessionlock::settings::Settings;
-use iced_sessionlock::MultiApplication;
 use pam::Client;
 use std::sync::LazyLock;
 use uzers::{get_current_uid, get_user_by_uid};
+
+use iced_sessionlock::to_session_message;
+
+use iced_sessionlock::build_pattern::application;
 static INPUT_ID: LazyLock<text_input::Id> = LazyLock::new(text_input::Id::unique);
 
 fn main() -> Result<(), iced_sessionlock::Error> {
-    Lock::run(Settings::default())
+    application(Lock::update, Lock::view)
+        .theme(Lock::theme)
+        .subscription(Lock::subscription)
+        .run_with(Lock::new)
 }
 
 struct Lock {
     steps: AuthSteps,
 }
 
-impl TryInto<UnLockAction> for Message {
-    type Error = Self;
-    fn try_into(self) -> Result<UnLockAction, Self::Error> {
-        if let Self::Unlock = self {
-            return Ok(UnLockAction);
-        }
-        Err(self)
-    }
-}
-
+#[to_session_message]
 #[derive(Debug, Clone)]
 enum Message {
     NextPressed,
     Step(StepMessage),
     EnterEvent(Event),
-    Unlock,
 }
-impl MultiApplication for Lock {
-    type Executor = iced::executor::Default;
-    type Message = Message;
-    type Flags = ();
-    type Theme = Theme;
 
-    fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
+impl Lock {
+    fn new() -> (Self, Command<Message>) {
         (
             Self {
                 steps: AuthSteps::new(),
@@ -53,19 +42,16 @@ impl MultiApplication for Lock {
             Command::none(),
         )
     }
-    fn namespace(&self) -> String {
-        String::from("Waylock")
-    }
 
-    fn theme(&self) -> Self::Theme {
+    fn theme(&self) -> iced::Theme {
         Theme::Dark
     }
 
-    fn subscription(&self) -> Subscription<Self::Message> {
+    fn subscription(&self) -> Subscription<Message> {
         Subscription::batch(vec![iced::event::listen().map(Message::EnterEvent)])
     }
 
-    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
+    fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::NextPressed => {
                 self.steps.advance();
@@ -83,13 +69,13 @@ impl MultiApplication for Lock {
                 _ => Command::none(),
             },
 
-            Message::Unlock => Command::done(message),
+            Message::UnLock => Command::done(message),
 
             Message::Step(step_msg) => self.steps.update(step_msg),
         }
     }
 
-    fn view(&self, _window: Id) -> Element<'_, Self::Message, Self::Theme, Renderer> {
+    fn view(&self, _window: Id) -> Element<Message> {
         let Lock { steps, .. } = self;
 
         column![steps.view().map(Message::Step)].into()
@@ -198,7 +184,7 @@ impl<'a> AuthStep {
                             client.authenticate()
                         },
                         |result| match result {
-                            Ok(_) => Message::Unlock,
+                            Ok(_) => Message::UnLock,
                             Err(e) => Message::Step(StepMessage::AuthError(format!("{}", e))),
                         },
                     );
@@ -226,7 +212,7 @@ impl<'a> AuthStep {
         }
     }
 
-    fn welcome(user_name: &'a String) -> Element<'a, StepMessage> {
+    fn welcome(user_name: &str) -> Element<StepMessage> {
         let image = Image::new("assets/ferris.png")
             .width(Length::Fill)
             .height(Length::Fill)
@@ -258,8 +244,8 @@ impl<'a> AuthStep {
                         },
                     }
                 }),
-                iced::widget::Space::with_height(15),
-                text("Press Enter to unlock")
+            iced::widget::Space::with_height(15),
+            text("Press Enter to unlock")
         ]
         .spacing(10)
         .padding(375)
