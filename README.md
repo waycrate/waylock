@@ -4,9 +4,9 @@
 
 ## View
 
-![img.png](img.png)
+![img.png](/images/img1.jpeg)
 
-![img_1.png](img_1.png)
+![img_1.png](/images/img2.jpeg)
 
 ## Contributing
 
