@@ -2535,9 +2535,9 @@ dependencies = [
 
 [[package]]
 name = "pam-f"
-version = "0.8.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e0485efeb2cd603b6dd69a38777c8986b64bd6ae7c364e39c980c7c43f31997"
+checksum = "da34e417f02396b632382f77f5335eaa361a534a022951d2c96e941be1abf100"
 dependencies = [
  "libc",
  "memchr",
