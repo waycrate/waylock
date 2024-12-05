@@ -1,5 +1,5 @@
 [package]
-name = "waylock"
+name = "coldlock"
 version = "0.1.0"
 edition = "2021"
 
